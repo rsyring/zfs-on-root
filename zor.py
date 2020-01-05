@@ -68,9 +68,10 @@ def config_prep(click_ctx):
         setattr(rv, key.lower(), value)
 
     rv.cache_dpath = pathlib.Path(rv.cache_dpath)
-    rv.efi_dev = f'{rv.disk_dev}-part1'
-    rv.boot_dev = f'{rv.disk_dev}-part2'
-    rv.zfs_dev = f'{rv.disk_dev}-part3'
+    rv.efi_dev = f'/dev/disk/by-partlabel/EFI'
+    rv.boot_dev = f'/dev/disk/by-partlabel/boot'
+    rv.swap_dev = f'/dev/disk/by-partlabel/swap'
+    rv.zfs_dev = f'/dev/disk/by-partlabel/zfs'
 
     rv.os_ds = f'{rv.pool_name}/{rv.os_dataset}'
     rv.os_root_ds = f'{rv.os_ds}/root'
