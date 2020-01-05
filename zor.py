@@ -539,14 +539,8 @@ def install_os(wipe_first):
     chroot.usermod('-a', '-G', 'adm,cdrom,dip,lpadmin,netdev,plugdev,sambashare,sudo', username)
 
     # Full OS Install
-    # apt dist-upgrade --yes
-    # apt install --yes xubuntu-desktop
-    
-    # reset password on sampro pools
-    # Configure networking
-    # Disable log compression
-    # Set ZFS trim
-    # Swap
+    chroot.apt('dist-upgrade', '--yes', _fg=True)
+    chroot.apt('install', '--yes', 'xubuntu-desktop', _fg=True)
 
 if __name__ == '__main__':
     zor()
