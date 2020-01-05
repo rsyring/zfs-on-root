@@ -6,8 +6,8 @@ Resources
 
 - [My notes and files on previous ZOR][gist]
 - [Debian Buster Root on ZFS][debzfs]
-- [Ubuntu 18.04 root on ZFS[ubuzfs]
- 
+- [Ubuntu 18.04 root on ZFS][ubuzfs]
+
 [gist]: https://gist.github.com/rsyring/849d40f828194d124577e4b49abee373
 [debzfs]: https://github.com/zfsonlinux/zfs/wiki/Debian-Buster-Root-on-ZFS
 [ubuzfs]: https://github.com/zfsonlinux/zfs/wiki/Ubuntu-18.04-Root-on-ZFS
@@ -42,7 +42,6 @@ Usage Steps
 ToDo
 ----
 
-* Full OS Install
 * Configure swap
   - should be encrypted
   - /etc/sysctl.conf:
@@ -50,7 +49,6 @@ ToDo
     vm.vfs_cache_pressure=50
 * Disable log compression
 * Set ZFS trim
-* Configure networking? 18.04 guide says to set it to use NetworkManager but my 19.04 install doesn't have anything in /etc/netplan and it works fine.
 
 Commands
 --------
