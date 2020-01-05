@@ -4,12 +4,13 @@ Ubuntu Root on ZFS
 Resources
 ---------
 
- - [My notes and files on previous ZOR][gist]
- - [Debian Buster Root on ZFS][debzfs]
+- [My notes and files on previous ZOR][gist]
+- [Debian Buster Root on ZFS][debzfs]
+- [Ubuntu 18.04 root on ZFS[ubuzfs]
  
 [gist]: https://gist.github.com/rsyring/849d40f828194d124577e4b49abee373
 [debzfs]: https://github.com/zfsonlinux/zfs/wiki/Debian-Buster-Root-on-ZFS
-
+[ubuzfs]: https://github.com/zfsonlinux/zfs/wiki/Ubuntu-18.04-Root-on-ZFS
 
 Live Env Steps
 --------------
@@ -19,16 +20,37 @@ Live Env Steps
 3. Connect to WiFi
 4. `sudo sh live-env-prep.sh`
 
+Usage Steps
+-----------
+
+* sudo python3 zor.py status
+* sudo python3 zor.py disk-wipe
+* sudo python3 zor.py disk-partition
+* sudo python3 zor.py disk-format
+* sudo python3 zor.py efi
+* sudo python3 zor.py zpool
+* sudo python3 zor.py zfs
+* sudo python3 zor.py install-os
+* sudo python3 zor.py status
+* sudo python3 zor.py unmount
+
+* sudo python3 zor.py recover
+* sudo python3 zor.py chroot
+* sudo python3 zor.py unmount
+
+
 ToDo
 ----
 
-* fix update-initramfs so it runs for all installed kernals due to: https://bugs.launchpad.net/ubuntu/+source/initramfs-tools/+bug/1829805
-* setup swap partition
-* better password for sampro
 * Full OS Install
-* Configure networking
+* Configure swap
+  - should be encrypted
+  - /etc/sysctl.conf:
+    vm.swappiness=1
+    vm.vfs_cache_pressure=50
 * Disable log compression
 * Set ZFS trim
+* Configure networking? 18.04 guide says to set it to use NetworkManager but my 19.04 install doesn't have anything in /etc/netplan and it works fine.
 
 Commands
 --------
