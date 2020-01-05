@@ -283,6 +283,14 @@ def unmount_everything():
         sh.zfs.umount(paths.zroot)
         sh.rmdir(paths.zroot)
 
+def kernels_in_boot():
+    boot_dpath = pathlib.Path(f'{paths.zroot}/boot')
+    kernel_fpaths = boot_dpath.glob('vmlinuz-*')
+    # Path names look like: vmlinuz-5.3.0-24-generic
+    # Strip off "vmlinuz-" leaving just the version that can be fed to update-initramfs
+    kernel_versions = [fpath.name[8:] for fpath in kernel_fpaths]
+    return kernel_versions
+
 # ------------------
 # CLI Commands Below
 # ------------------
@@ -301,6 +309,11 @@ def zor(ctx):
 @zor.command('config')
 def _config():
     print(config)
+
+
+@zor.command()
+def kernel_versions():
+    print(kernels_in_boot())
 
 
 @zor.command()
@@ -506,6 +519,11 @@ def install_os(wipe_first):
     chroot('apt', 'install', '--yes', '--no-install-recommends', 'linux-image-generic', _fg=True)
     chroot('apt', 'install', '--yes', 'zfs-initramfs', _fg=True)
 
+    # `update-initramfs -uk all` doesn't work, see:
+    # https://bugs.launchpad.net/ubuntu/+source/initramfs-tools/+bug/1829805
+    for kernel_version in kernels_in_boot():
+        chroot('update-initramfs', '-uk', kernel_version, _fg=True)
+
     # Create user
     # Todo should each user have their own dataset for their home directory?
     # chroot.zfs.create(f'{config.pool_name}/home/{username}')
@@ -517,10 +535,6 @@ def install_os(wipe_first):
     chroot.addgroup('--system', 'netdev')
     chroot.usermod('-a', '-G', 'adm,cdrom,dip,lpadmin,netdev,plugdev,sambashare,sudo', username)
 
-    # update-initramfs -u -k all ?
-    # update-initramfs -u -k 5.3.0-18-generic -v
-    # https://bugs.launchpad.net/ubuntu/+source/initramfs-tools/+bug/1829805
-    
     # Full OS Install
     # apt dist-upgrade --yes
     # apt install --yes xubuntu-desktop
