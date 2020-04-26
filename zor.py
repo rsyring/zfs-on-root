@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import configparser
 import getpass
 import json
@@ -23,9 +25,10 @@ config_tpl = f"""
 # Example: /dev/disk/by-id/nvme-Samsung_SSD_960_PRO_1TB_...
 DISK_DEV =
 
-# The name of the ZFS root pool
-Examples: "rpool" or "sampro" if you want it named after the disk
-POOL_NAME =
+# Short name for DISK_DEV above.  This will be used for partition name prefixes
+# as well as the root ZFS pool name
+# Example: "sampro" for a samsung pro drive
+DISK_LABEL =
 
 # The name of the dataset that will be the root for this OS installation.  Often
 # named after the OS version being installed
@@ -44,13 +47,18 @@ HOSTNAME =
 # Filesystem path to directory where cache files can be kept.  To speed up this script
 # across reboots of the live environment, make this a path to parmanent storage (e.g. mounted
 # USB drive)
-# Examples "/tmp" or "{CWD}/cache"
+# Examples "/tmp" or "/mnt/usb/zor-cache"
 CACHE_DPATH =
+
+# Installed system user credentials
+ADMIN_USERNAME =
+ADMIN_PASSWORD =
 """
 
 
 def config_prep(click_ctx):
-    config_keys = ('DISK_DEV', 'POOL_NAME', 'OS_DATASET', 'RELEASE_CODENAME', 'HOSTNAME', 'CACHE_DPATH')
+    config_keys = ('DISK_DEV', 'DISK_LABEL', 'OS_DATASET', 'RELEASE_CODENAME', 'HOSTNAME', 'CACHE_DPATH',
+                   'ADMIN_USERNAME', 'ADMIN_PASSWORD')
 
     config_fpath = CWD / 'zor-config.ini'
     config = configparser.ConfigParser()
@@ -67,11 +75,16 @@ def config_prep(click_ctx):
             click_ctx.fail(f'Edit the file {config_fpath} so that all variables are defined.  {key} is blank or missing')
         setattr(rv, key.lower(), value)
 
+    rv.pool_name = rv.disk_label
+    rv.efi_partname = f'{rv.disk_label}-efi'
+    rv.efi_dev = f'/dev/disk/by-partlabel/{rv.efi_partname}'
+    rv.boot_partname = f'{rv.disk_label}-boot'
+    rv.boot_dev = f'/dev/disk/by-partlabel/{rv.boot_partname}'
+    rv.swap_partname = f'{rv.disk_label}-swap'
+    rv.swap_dev = f'/dev/disk/by-partlabel/{rv.swap_partname}'
+    rv.zfs_partname = f'{rv.disk_label}-zfs'
+    rv.zfs_dev = f'/dev/disk/by-partlabel/{rv.zfs_partname}'
     rv.cache_dpath = pathlib.Path(rv.cache_dpath)
-    rv.efi_dev = f'/dev/disk/by-partlabel/EFI'
-    rv.boot_dev = f'/dev/disk/by-partlabel/boot'
-    rv.swap_dev = f'/dev/disk/by-partlabel/swap'
-    rv.zfs_dev = f'/dev/disk/by-partlabel/zfs'
 
     rv.os_ds = f'{rv.pool_name}/{rv.os_dataset}'
     rv.os_root_ds = f'{rv.os_ds}/root'
@@ -96,8 +109,8 @@ ff02::3 ip6-allhosts
 
 etc_fstab_tpl = """
 # <device>               <dir>      <type>  <options>                   <dump> <fsck>
-PARTLABEL=boot           /boot      ext4    defaults,nodev,relatime     0      1
-PARTLABEL=EFI            /boot/efi  vfat    defaults,nodev,relatime     0      2
+PARTLABEL={config.boot_partname}           /boot      ext4    defaults,nodev,relatime     0      1
+PARTLABEL={config.efi_partname}           /boot/efi  vfat    defaults,nodev,relatime     0      2
 """.lstrip()
 
 boot_refind_conf_tpl = """
@@ -130,7 +143,7 @@ paths.efi = paths.efi_mnt / 'EFI'
 paths.efi_boot = paths.efi / 'BOOT'
 paths.efi_memtest = paths.efi / 'memtest86'
 
-paths.zroot = paths.mnt / 'sampro'
+paths.zroot = paths.mnt / 'zroot'
 paths.boot = paths.zroot / 'boot'
 paths.dev = paths.zroot / 'dev'
 paths.proc = paths.zroot / 'proc'
@@ -261,7 +274,7 @@ def zfs_create(wipe_first):
 
 
 def other_mounts():
-    sh.mount('/dev/disk/by-partlabel/boot', f'{paths.zroot}/boot')
+    sh.mount(config.boot_dev, f'{paths.zroot}/boot')
     sh.mount('--rbind', '/dev', f'{paths.zroot}/dev', '--make-rslave')
     sh.mount('--rbind', '/proc', f'{paths.zroot}/proc', '--make-rslave')
     sh.mount('--rbind', '/sys', f'{paths.zroot}/sys', '--make-rslave')
@@ -319,7 +332,8 @@ def kernel_versions():
 @zor.command()
 def status():
     print(f'$ config values --------------------\n')
-    print(config)
+    for k, v in config.__dict__.items():
+        print(k, v)
 
     print(f'\n$ sgdisk --print {config.disk_dev} --------------------\n')
     sh.sgdisk('--print', config.disk_dev, _out=sys.stdout, _ok_code=[0,2])
@@ -372,26 +386,26 @@ def disk_partition():
     sh.sgdisk('-Z', config.disk_dev, _ok_code=[0,2])
 
     # UEFI partition
-    sh.sgdisk('-n', '1:1M:+512M', '-c', '1:EFI', '-t', '1:EF00', config.disk_dev)
+    sh.sgdisk('-n', '1:1M:+512M', '-c', f'1:{config.efi_partname}', '-t', '1:EF00', config.disk_dev)
 
     # boot partition
-    sh.sgdisk('-n', '2:0:+2G', '-c', '2:boot', '-t', '2:8300', config.disk_dev)
+    sh.sgdisk('-n', '2:0:+2G', '-c', f'2:{config.boot_partname}', '-t', '2:8300', config.disk_dev)
 
     # swap partition
-    sh.sgdisk('-n', '0:0:+16G', '-c', '0:swap', '-t', '0:8200', config.disk_dev)
+    sh.sgdisk('-n', '0:0:+16G', '-c', f'0:{config.swap_partname}', '-t', '0:8200', config.disk_dev)
 
     # zfs root pool partition
-    sh.sgdisk('-n', '0:0:0', '-c', '0:zfs', '-t', '0:BF01', config.disk_dev)
+    sh.sgdisk('-n', '0:0:0', '-c', f'0:{config.zfs_partname}', '-t', '0:BF01', config.disk_dev)
 
 
 @zor.command('disk-format')
 def disk_format():
     # format EFI
-    sh.mkdosfs('-F', '32', '-s', '1', '-n', 'EFI', config.efi_dev)
+    sh.mkdosfs('-F', '32', '-s', '1', '-n', config.efi_partname, config.efi_dev)
 
     # format boot
     mkfsext4 = sh.Command("mkfs.ext4")
-    mkfsext4('-qF', '-L', 'boot', config.boot_dev)
+    mkfsext4('-qF', '-L', config.boot_partname, config.boot_dev)
 
 
 @zor.command('disk-wipe')
@@ -479,12 +493,6 @@ def install_os(wipe_first):
     if wipe_first:
         zfs_create(wipe_first)
 
-    username = input('Admin user\'s username?: ')
-    password = getpass.getpass('Admin user\'s password?: ')
-    password2 = getpass.getpass('Confirm password: ')
-
-    assert password == password2, 'Passwords did not match'
-
     db_tarball_fpath = config.cache_dpath / 'debootstrap.tar'
     if not db_tarball_fpath.exists():
         sh.debootstrap('--make-tarball', db_tarball_fpath, config.release_codename, '/tmp/not-there', _fg=True)
@@ -495,13 +503,24 @@ def install_os(wipe_first):
         sh.zfs('set', 'devices=off', config.os_root_ds)
 
     boot_dpath = paths.zroot / 'boot'
-    boot_dpath.joinpath('refind_linux.conf').write_text(boot_refind_conf_tpl.format(zfs_os_root_ds=config.os_root_ds))
+    refind_conf_content = boot_refind_conf_tpl.format(zfs_os_root_ds=config.os_root_ds)
+    boot_dpath.joinpath('refind_linux.conf').write_text(refind_conf_content)
 
     etc_fpath = paths.zroot / 'etc'
-    etc_fpath.joinpath('apt', 'sources.list').write_text(apt_sources_list.format(codename=config.release_codename))
-    etc_fpath.joinpath('fstab').write_text(etc_fstab_tpl)
+
+    sources_list_content = apt_sources_list.format(codename=config.release_codename)
+    etc_fpath.joinpath('apt', 'sources.list').write_text(sources_list_content)
+
+    fstab_content = etc_fstab_tpl.format(config=config)
+    etc_fpath.joinpath('fstab').write_text(fstab_content)
+
     etc_fpath.joinpath('hostname').write_text(config.hostname)
-    etc_fpath.joinpath('hosts').write_text(etc_hosts_tpl.format(hostname=config.hostname))
+
+    etc_hosts_content = etc_hosts_tpl.format(hostname=config.hostname)
+    etc_fpath.joinpath('hosts').write_text(etc_hosts_content)
+
+    etc_fpath.joinpath('apt', 'apt.conf.d', '01-proxy').write_text(
+        'Acquire::http { Proxy "http://server.lan:3142"; };')
 
     other_mounts()
 
@@ -527,9 +546,23 @@ def install_os(wipe_first):
     for kernel_version in kernels_in_boot():
         chroot('update-initramfs', '-uk', kernel_version, _fg=True)
 
-    # Create user
+
+@zor.command('install-user')
+@click.option('--wipe-first', is_flag=True, default=False)
+def install_user(wipe_first):
+    chroot = sh.chroot.bake(paths.zroot)
+
+    username = config.admin_username
+    password = config.admin_password
+    user_dataset = f'{config.pool_name}/home/{username}'
+
+    if wipe_first:
+        chroot.userdel(username, '--remove',  _ok_code=[0,6])
+        chroot.zfs.destroy('-R', user_dataset, _ok_code=[0,1])
+
+    #Create user
     # Todo should each user have their own dataset for their home directory?
-    # chroot.zfs.create(f'{config.pool_name}/home/{username}')
+    chroot.zfs.create(user_dataset)
     chroot.adduser('--disabled-login', '--gecos=,', username)
     chroot.chpasswd(_in=f'{username}:{password}')
 
@@ -538,9 +571,16 @@ def install_os(wipe_first):
     chroot.addgroup('--system', 'netdev')
     chroot.usermod('-a', '-G', 'adm,cdrom,dip,lpadmin,netdev,plugdev,sambashare,sudo', username)
 
-    # Full OS Install
+
+@zor.command('install-desktop')
+@click.option('--wipe-first', is_flag=True, default=False)
+def install_os(wipe_first):
+    chroot = sh.chroot.bake(paths.zroot)
+
+    # Full OS & desktop install
     chroot.apt('dist-upgrade', '--yes', _fg=True)
     chroot.apt('install', '--yes', 'xubuntu-desktop', _fg=True)
+
 
 if __name__ == '__main__':
     zor()
