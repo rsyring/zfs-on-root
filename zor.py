@@ -560,16 +560,16 @@ def install_user(wipe_first):
         chroot.userdel(username, '--remove',  _ok_code=[0,6])
         chroot.zfs.destroy('-R', user_dataset, _ok_code=[0,1])
 
-    #Create user
-    # Todo should each user have their own dataset for their home directory?
+    # Create user
     chroot.zfs.create(user_dataset)
     chroot.adduser('--disabled-login', '--gecos=,', username)
     chroot.chpasswd(_in=f'{username}:{password}')
 
+    chroot.addgroup('--system', 'docker')
     chroot.addgroup('--system', 'lpadmin')
-    chroot.addgroup('--system', 'sambashare')
     chroot.addgroup('--system', 'netdev')
-    chroot.usermod('-a', '-G', 'adm,cdrom,dip,lpadmin,netdev,plugdev,sambashare,sudo', username)
+    chroot.addgroup('--system', 'sambashare')
+    chroot.usermod('-a', '-G', 'adm,cdrom,dip,docker,lpadmin,netdev,plugdev,sambashare,sudo', username)
 
 
 @zor.command('install-desktop')
