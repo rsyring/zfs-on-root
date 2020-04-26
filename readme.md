@@ -31,6 +31,8 @@ Usage Steps
 * sudo python3 zor.py zpool
 * sudo python3 zor.py zfs
 * sudo python3 zor.py install-os
+* sudo python3 zor.py install-user
+* sudo python3 zor.py install-desktop
 * sudo python3 zor.py status
 * sudo python3 zor.py unmount
 
