@@ -448,7 +448,7 @@ def efi():
     # clean slate and copy files to our EFI partition
     sh.rm('-rf', paths.efi_memtest)
     sh.cp('-r', paths.memtest_boot, paths.efi_memtest)
-    sh.mv(paths.efi_memtest / 'BOOTX64.efi', paths.efi_memtest / 'memtestx64.efi')
+    sh.mv(paths.efi_memtest / 'BOOTX64.efi', paths.efi_memtest / 'memtest86_x64.efi')
 
 
 @zor.command()
