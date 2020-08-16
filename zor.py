@@ -183,6 +183,8 @@ def memtest_extract():
     img_fpath = unzip_fpath / 'memtest86-usb.img'
     zip_url = 'https://www.memtest86.com/downloads/memtest86-usb.zip'
 
+    config.cache_dpath.mkdir(exist_ok=True)
+
     if not zip_fpath.exists():
         print('Downloading:', zip_url, 'to', zip_fpath)
         sh.wget('-O', zip_fpath, zip_url)
