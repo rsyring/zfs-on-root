@@ -15,10 +15,11 @@ Resources
 Live Env Steps
 --------------
 
-1. Mount USB media
+1. Mount USB media (or use automount)
 2. Touchpad: no click on touch
 3. Connect to WiFi
 4. `sudo sh live-env-prep.sh`
+5. edit zor-config.ini
 
 Usage Steps
 -----------
@@ -35,6 +36,8 @@ Usage Steps
 * sudo python3 zor.py install-desktop
 * sudo python3 zor.py status
 * sudo python3 zor.py unmount
+  - Make sure you unmount which exports the zpool.
+  - This errors out the first time you run due to proc, just run it again.
 
 * sudo python3 zor.py recover
 * sudo python3 zor.py chroot
@@ -54,16 +57,6 @@ ToDo
 
 Commands
 --------
-
-CTRL / ALT swap:
-
-`$ setxkbmap -option "ctrl:swap_lalt_lctl"`
-
-
-Zero out the drive:
-
-`$ sudo dd bs=10M count=1024 if=/dev/zero of=/dev/disk/by-id/nvme-Samsung_SSD_960_PRO_1TB_S3EVNX0J802831N conv=fdatasync status=progress`
-
 
 Find processes that prevent unmount:
 
