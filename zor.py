@@ -579,12 +579,14 @@ def install_user(wipe_first):
 
 @zor.command('install-desktop')
 @click.option('--wipe-first', is_flag=True, default=False)
-def install_os(wipe_first):
+def install_desktop(wipe_first):
     chroot = sh.chroot.bake(paths.zroot)
 
     # Full OS & desktop install
     chroot.apt('dist-upgrade', '--yes', _fg=True)
-    chroot.apt('install', '--yes', 'xubuntu-desktop', _fg=True)
+
+    # Used cinnamon-desktop-environment on precision last time
+    chroot.apt('install', '--yes', 'cinnamon-core', _fg=True)
 
 
 if __name__ == '__main__':
