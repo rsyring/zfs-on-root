@@ -378,6 +378,8 @@ def unmount():
     """ Cleanup all the mounts we created"""
     unmount_everything()
 
+    sh.zpool.export('-a', _fg=True)
+
 
 @zor.command('disk-partition')
 def disk_partition():
