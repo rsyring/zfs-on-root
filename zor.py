@@ -477,6 +477,7 @@ def zpool(wipe_first):
         '-O', 'keyformat=passphrase',
         '-O', 'mountpoint=none',
         '-R', paths.zroot,
+        '-f',
         config.pool_name,
         config.zfs_dev,
         _fg=True,
