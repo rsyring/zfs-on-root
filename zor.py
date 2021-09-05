@@ -564,18 +564,20 @@ def install_user(wipe_first):
 
     username = config.admin_username
     passhash = config.admin_passhash
-    user_dataset = f'{config.pool_name}/home/{username}'
+
+    # Don't use a ZFS dataset for now.  The home directory won't be created as expected and
+    # /home is already a dedicated dataset.
+    # user_dataset = f'{config.pool_name}/home/{username}'
 
     if wipe_first:
-        chroot.userdel(username, '--remove',  _ok_code=[0,6])
-        chroot.zfs.destroy('-R', user_dataset, _ok_code=[0,1])
+        #chroot.zfs.umount(user_dataset, _ok_code=[0,1])
+        chroot.userdel(username, '--remove', _ok_code=[0,6])
+        # chroot.zfs.destroy('-R', user_dataset, _ok_code=[0,1])
 
-    # Create user
-    chroot.zfs.create(user_dataset)
+    # Create user dataset
+    #sh.zfs.create(user_dataset)
 
-    print('Sleeping 5 seconds to give zfs dataset time to mount...')
-    time.sleep(5)
-
+    # Create user dataset
     chroot.useradd('--create-home', '-p', passhash, username)
 
     chroot.addgroup('--system', 'docker')
