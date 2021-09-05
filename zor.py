@@ -5,6 +5,7 @@ import getpass
 import json
 import os
 import pathlib
+import time
 from types import SimpleNamespace
 import sys
 
@@ -502,6 +503,7 @@ def install_os(wipe_first):
     """ Install the OS into the presumably mounted datasets """
     if wipe_first:
         zfs_create(wipe_first)
+        print('Sleeping 5 seconds to give zfs datasets time to mount...')
 
     db_tarball_fpath = config.cache_dpath / 'debootstrap.tar'
     if not db_tarball_fpath.exists():
@@ -511,6 +513,8 @@ def install_os(wipe_first):
         sh.zfs('set', 'devices=on', config.os_root_ds)
         sh.debootstrap('--unpack-tarball', db_tarball_fpath, config.release_codename, paths.zroot, _fg=True)
         sh.zfs('set', 'devices=off', config.os_root_ds)
+
+    other_mounts()
 
     boot_dpath = paths.zroot / 'boot'
     refind_conf_content = boot_refind_conf_tpl.format(zfs_os_root_ds=config.os_root_ds)
@@ -531,8 +535,6 @@ def install_os(wipe_first):
 
     etc_fpath.joinpath('apt', 'apt.conf.d', '01-proxy').write_text(
         'Acquire::http { Proxy "http://server.lan:3142"; };')
-
-    other_mounts()
 
     # Customize OS in chroot
     # ----------------------
