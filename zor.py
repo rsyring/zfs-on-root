@@ -595,8 +595,8 @@ def install_desktop(wipe_first):
     # Full OS & desktop install
     chroot.apt('dist-upgrade', '--yes', _fg=True)
 
-    # Used cinnamon-desktop-environment on precision last time
-    chroot.apt('install', '--yes', 'cinnamon-core', _fg=True)
+    # Ideally 'cinnamon-core' would work, but alas, didn't.
+    chroot.apt('install', '--yes', 'cinnamon-desktop-environment', _fg=True)
 
 
 if __name__ == '__main__':
