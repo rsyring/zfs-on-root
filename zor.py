@@ -220,6 +220,7 @@ def zfs_create(wipe_first):
         sh.zfs.destroy('-R', os_ds, _ok_code=[0,1])
         sh.zfs.destroy('-R', f'{config.pool_name}/docker', _ok_code=[0,1])
         sh.zfs.destroy('-R', f'{config.pool_name}/home', _ok_code=[0,1])
+        sh.zfs.destroy('-R', f'{config.pool_name}/root', _ok_code=[0,1])
         sh.zfs.destroy('-R', f'{config.pool_name}/postgresql', _ok_code=[0,1])
         sh.zfs.destroy('-R', f'{config.pool_name}/shared', _ok_code=[0,1])
         sh.rm('-rf', paths.zroot)
@@ -261,9 +262,12 @@ def zfs_create(wipe_first):
     # or they will prevent os_root_ds from mounting b/c directories will already exist.
 
     sh.zfs.create('-o', 'mountpoint=/home', f'{config.pool_name}/home')
-    sh.zfs.create('-o', 'mountpoint=/root', f'{config.pool_name}/home/root')
+    sh.zfs.create('-o', 'mountpoint=/root', f'{config.pool_name}/root')
     sh.zfs.create('-o', 'mountpoint=/shared', f'{config.pool_name}/shared')
     sh.zfs.create('-o', 'mountpoint=/var/lib/docker', f'{config.pool_name}/docker')
+
+    # Security for root
+    sh.chmod('700', f'{paths.zroot}/root')
 
     # Special settings see Arch wiki for details: https://wiki.archlinux.org/index.php/ZFS
     sh.zfs.create(
@@ -297,6 +301,7 @@ def unmount_everything():
     if str(paths.zroot) in zfs_mounts:
         sh.zfs.umount(paths.zroot)
         sh.rmdir(paths.zroot)
+
 
 def kernels_in_boot():
     boot_dpath = pathlib.Path(f'{paths.zroot}/boot')
