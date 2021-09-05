@@ -53,13 +53,14 @@ CACHE_DPATH =
 
 # Installed system user credentials
 ADMIN_USERNAME =
-ADMIN_PASSWORD =
+# openssl passwd -1 'put password here'
+ADMIN_PASSHASH =
 """
 
 
 def config_prep(click_ctx):
     config_keys = ('DISK_DEV', 'DISK_LABEL', 'OS_DATASET', 'RELEASE_CODENAME', 'HOSTNAME', 'CACHE_DPATH',
-                   'ADMIN_USERNAME', 'ADMIN_PASSWORD')
+                   'ADMIN_USERNAME', 'ADMIN_PASSHASH')
 
     config_fpath = CWD / 'zor-config.ini'
     config = configparser.ConfigParser()
@@ -172,10 +173,6 @@ class Partitions:
         if self.is_mounted(fspath):
             print(f'Unmounting: {fspath}')
             sh.umount('-Rn', fspath)
-
-    def recursive_unmount(self, fspath):
-        for mp in mps:
-            sh.umount(mp)
 
 
 def memtest_extract():
@@ -504,6 +501,7 @@ def install_os(wipe_first):
     if wipe_first:
         zfs_create(wipe_first)
         print('Sleeping 5 seconds to give zfs datasets time to mount...')
+        time.sleep(5)
 
     db_tarball_fpath = config.cache_dpath / 'debootstrap.tar'
     if not db_tarball_fpath.exists():
@@ -565,7 +563,7 @@ def install_user(wipe_first):
     chroot = sh.chroot.bake(paths.zroot)
 
     username = config.admin_username
-    password = config.admin_password
+    passhash = config.admin_passhash
     user_dataset = f'{config.pool_name}/home/{username}'
 
     if wipe_first:
@@ -574,8 +572,11 @@ def install_user(wipe_first):
 
     # Create user
     chroot.zfs.create(user_dataset)
-    chroot.adduser('--disabled-login', '--gecos=,', username)
-    chroot.chpasswd(_in=f'{username}:{password}')
+
+    print('Sleeping 5 seconds to give zfs dataset time to mount...')
+    time.sleep(5)
+
+    chroot.useradd('--create-home', '-p', passhash, username)
 
     chroot.addgroup('--system', 'docker')
     chroot.addgroup('--system', 'lpadmin')
