@@ -227,7 +227,7 @@ def zfs_create(wipe_first):
     # OS specific datasets
     # --------------------
 
-    # Just a container that gives children mountpoints through inheritanc
+    # Just a container that gives children mountpoints through inheritance
     sh.zfs.create('-o', 'canmount=off', '-o', 'mountpoint=/', os_ds)
 
     # The root dataset, e.g. the mount that is actually "/"
