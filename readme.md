@@ -1,26 +1,6 @@
 Ubuntu Root on ZFS
 ==================
 
-Resources
----------
-
-- [My notes and files on previous ZOR][gist]
-- [Debian Buster Root on ZFS][debzfs]
-- [Ubuntu 18.04 root on ZFS][ubuzfs]
-
-[gist]: https://gist.github.com/rsyring/849d40f828194d124577e4b49abee373
-[debzfs]: https://github.com/zfsonlinux/zfs/wiki/Debian-Buster-Root-on-ZFS
-[ubuzfs]: https://github.com/zfsonlinux/zfs/wiki/Ubuntu-18.04-Root-on-ZFS
-
-Live Env Steps
---------------
-
-1. Mount USB media (or use automount)
-2. Touchpad: no click on touch
-3. Connect to WiFi
-4. `sudo sh live-env-prep.sh`
-5. edit zor-config.ini
-
 Usage Steps
 -----------
 
