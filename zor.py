@@ -427,7 +427,8 @@ def disk_wipe():
 
 
 @zor.command()
-def efi():
+@click.option('--mount-only', is_flag=True, default=False)
+def efi(mount_only):
     """ Write programs to EFI partition """
     partitions = Partitions()
 
@@ -436,6 +437,9 @@ def efi():
     if not partitions.is_mounted(paths.efi_mnt):
         sh.mount(config.efi_dev, paths.efi_mnt)
     paths.efi.mkdir(exist_ok=True)
+
+    if mount_only:
+        return
 
     # clean slate
     sh.rm('-rf', paths.efi_boot)
