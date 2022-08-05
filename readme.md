@@ -19,7 +19,11 @@ Usage Steps
   - Make sure you unmount which exports the zpool.
   - This errors out the first time you run due to proc, just run it again.
 
-* sudo python3 zor.py recover
+Troubleshooting
+----------------
+
+* sudo python3 zor.py recover [--chroot]
+* sudo python3 zor.py install-os [--wipe-first]
 * sudo python3 zor.py chroot
 * sudo python3 zor.py unmount
 

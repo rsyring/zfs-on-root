@@ -507,9 +507,14 @@ def install_os(wipe_first):
         print('Sleeping 5 seconds to give zfs datasets time to mount...')
         time.sleep(5)
 
+    config.cache_dpath.mkdir(exist_ok=True)
     db_tarball_fpath = config.cache_dpath / 'debootstrap.tar'
+    # It would be ideal to just use these files but not sure if that's possible and the .tar
+    # method is working.
+    db_staging_fpath = config.cache_dpath / 'debootstrap-staging'
+
     if not db_tarball_fpath.exists():
-        sh.debootstrap('--make-tarball', db_tarball_fpath, config.release_codename, '/tmp/not-there', _fg=True)
+        sh.debootstrap('--make-tarball', db_tarball_fpath, config.release_codename, db_staging_fpath, _fg=True)
 
     if not paths.zroot.joinpath('bin').exists():
         sh.zfs('set', 'devices=on', config.os_root_ds)
@@ -534,9 +539,6 @@ def install_os(wipe_first):
 
     etc_hosts_content = etc_hosts_tpl.format(hostname=config.hostname)
     etc_fpath.joinpath('hosts').write_text(etc_hosts_content)
-
-    etc_fpath.joinpath('apt', 'apt.conf.d', '01-proxy').write_text(
-        'Acquire::http { Proxy "http://server.lan:3142"; };')
 
     # Customize OS in chroot
     # ----------------------
@@ -581,7 +583,6 @@ def install_user(wipe_first):
     # Create user dataset
     #sh.zfs.create(user_dataset)
 
-    # Create user dataset
     chroot.useradd('--create-home', '-p', passhash, username)
 
     chroot.addgroup('--system', 'docker')
@@ -592,15 +593,16 @@ def install_user(wipe_first):
 
 
 @zor.command('install-desktop')
-@click.option('--wipe-first', is_flag=True, default=False)
-def install_desktop(wipe_first):
+@click.argument('desktop', type=click.Choice(['cinnamon', 'xubuntu']))
+def install_desktop(desktop):
     chroot = sh.chroot.bake(paths.zroot)
+    desk_env = 'cinnamon-desktop-environment' if desktop == 'cinnamon' else 'xubuntu-desktop'
 
     # Full OS & desktop install
     chroot.apt('dist-upgrade', '--yes', _fg=True)
 
     # Ideally 'cinnamon-core' would work, but alas, didn't.
-    chroot.apt('install', '--yes', 'cinnamon-desktop-environment', _fg=True)
+    chroot.apt('install', '--yes', desk_env, _fg=True)
 
 
 if __name__ == '__main__':
