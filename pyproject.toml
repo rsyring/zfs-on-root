@@ -1,0 +1,19 @@
+[build-system]
+requires = [
+    'hatchling',
+    'hatch-requirements-txt',
+    'hatch-regex-commit',
+]
+build-backend = 'hatchling.build'
+
+
+[project]
+name = 'zfs-on-root'
+authors = [
+    {name = 'Randy Syring', email = 'randy@syrings.us'},
+]
+dynamic = ['dependencies', 'optional-dependencies', 'version']
+readme = 'readme.md'
+
+[project.scripts]
+'zor' = 'zor.cli:main'

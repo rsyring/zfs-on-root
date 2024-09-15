@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 
 import configparser
-import getpass
 import json
 import os
 import pathlib
+import sys
 import time
 from types import SimpleNamespace
-import sys
 
 import click
 import psutil
 import sh
+
 
 # ------------------
 # Configuration
@@ -19,7 +19,7 @@ import sh
 
 CWD = pathlib.Path(__file__).parent.resolve()
 config = None
-config_tpl = f"""
+config_tpl = """
 [zor]
 # Device path to the disk that will be used for the EFI, boot, and ZFS partitions
 # Assume ALL DATA WILL BE DESTROYED on this device, even though that may not always be true
@@ -59,8 +59,16 @@ ADMIN_PASSHASH =
 
 
 def config_prep(click_ctx):
-    config_keys = ('DISK_DEV', 'DISK_LABEL', 'OS_DATASET', 'RELEASE_CODENAME', 'HOSTNAME', 'CACHE_DPATH',
-                   'ADMIN_USERNAME', 'ADMIN_PASSHASH')
+    config_keys = (
+        'DISK_DEV',
+        'DISK_LABEL',
+        'OS_DATASET',
+        'RELEASE_CODENAME',
+        'HOSTNAME',
+        'CACHE_DPATH',
+        'ADMIN_USERNAME',
+        'ADMIN_PASSHASH',
+    )
 
     config_fpath = CWD / 'zor-config.ini'
     config = configparser.ConfigParser()
@@ -74,7 +82,10 @@ def config_prep(click_ctx):
     for key in config_keys:
         value = config['zor'].get(key)
         if not value:
-            click_ctx.fail(f'Edit the file {config_fpath} so that all variables are defined.  {key} is blank or missing')
+            click_ctx.fail(
+                f'Edit the file {config_fpath} so that all variables are defined.'
+                f'  {key} is blank or missing.',
+            )
         setattr(rv, key.lower(), value)
 
     rv.pool_name = rv.disk_label
@@ -92,6 +103,7 @@ def config_prep(click_ctx):
     rv.os_root_ds = f'{rv.os_ds}/root'
 
     return rv
+
 
 # ------------------
 # File templates
@@ -119,7 +131,7 @@ boot_refind_conf_tpl = """
 "Boot" "rw root=ZFS={zfs_os_root_ds}"
 "ZFS Debug" "rw root=ZFS={zfs_os_root_ds} zfsdebug=on"
 "SD Debug" "rw root=ZFS={zfs_os_root_ds} systemd.log_level=debug systemd.log_target=kmsg log_buf_len=1M printk.devkmsg=on enforcing=0"
-""".lstrip()
+""".lstrip()  # noqa: E501
 
 apt_sources_list = """
 deb http://archive.ubuntu.com/ubuntu {codename} main restricted universe multiverse
@@ -161,7 +173,6 @@ paths.memtest_boot = paths.memtest_mnt / 'EFI' / 'BOOT'
 
 
 class Partitions:
-
     def __init__(self):
         self.partitions = psutil.disk_partitions(all=True)
         self.mounts = [p.mountpoint for p in self.partitions if p.mountpoint]
@@ -215,12 +226,12 @@ def zfs_create(wipe_first):
     if wipe_first:
         unmount_everything()
 
-        sh.zfs.destroy('-R', os_ds, _ok_code=[0,1])
-        sh.zfs.destroy('-R', f'{config.pool_name}/docker', _ok_code=[0,1])
-        sh.zfs.destroy('-R', f'{config.pool_name}/home', _ok_code=[0,1])
-        sh.zfs.destroy('-R', f'{config.pool_name}/root', _ok_code=[0,1])
-        sh.zfs.destroy('-R', f'{config.pool_name}/postgresql', _ok_code=[0,1])
-        sh.zfs.destroy('-R', f'{config.pool_name}/shared', _ok_code=[0,1])
+        sh.zfs.destroy('-R', os_ds, _ok_code=[0, 1])
+        sh.zfs.destroy('-R', f'{config.pool_name}/docker', _ok_code=[0, 1])
+        sh.zfs.destroy('-R', f'{config.pool_name}/home', _ok_code=[0, 1])
+        sh.zfs.destroy('-R', f'{config.pool_name}/root', _ok_code=[0, 1])
+        sh.zfs.destroy('-R', f'{config.pool_name}/postgresql', _ok_code=[0, 1])
+        sh.zfs.destroy('-R', f'{config.pool_name}/shared', _ok_code=[0, 1])
         sh.rm('-rf', paths.zroot)
 
     # --------------------
@@ -236,10 +247,12 @@ def zfs_create(wipe_first):
     # b/c the directory is not empty
     sh.zfs.mount(os_root_ds)
 
-    # Another container, has to be present to create the other var datasets below, but we will never mount this
+    # Another container, has to be present to create the other var datasets below, but we will never
+    # mount this
     sh.zfs.create('-o', 'canmount=off', f'{os_ds}/var')
 
-    # Separate dataset for logs so that if we rollback a snapshot, we don't lose logs for troubleshooting.
+    # Separate dataset for logs so that if we rollback a snapshot, we don't lose logs for
+    # troubleshooting.
     sh.zfs.create(f'{os_ds}/var/log')
 
     # Datasets that should not be in a snapshot
@@ -247,7 +260,17 @@ def zfs_create(wipe_first):
     sh.zfs.create('-o', 'com.sun:auto-snapshot=false', f'{os_ds}/var/tmp')
 
     # Custom settings for /tmp
-    sh.zfs.create('-o', 'com.sun:auto-snapshot=false', '-o', 'setuid=off', '-o', 'devices=off', '-o', 'sync=disabled', f'{os_ds}/tmp')
+    sh.zfs.create(
+        '-o',
+        'com.sun:auto-snapshot=false',
+        '-o',
+        'setuid=off',
+        '-o',
+        'devices=off',
+        '-o',
+        'sync=disabled',
+        f'{os_ds}/tmp',
+    )
 
     # Security for tmp directories
     sh.chmod('1777', f'{paths.zroot}/var/tmp')
@@ -256,8 +279,8 @@ def zfs_create(wipe_first):
     # --------------------
     # Shared datasets
     # --------------------
-    # these could possibly be shared across different OSs running on the same system.  Create these second
-    # or they will prevent os_root_ds from mounting b/c directories will already exist.
+    # these could possibly be shared across different OSs running on the same system.  Create these
+    # second or they will prevent os_root_ds from mounting b/c directories will already exist.
 
     sh.zfs.create('-o', 'mountpoint=/home', f'{config.pool_name}/home')
     sh.zfs.create('-o', 'mountpoint=/root', f'{config.pool_name}/root')
@@ -269,11 +292,15 @@ def zfs_create(wipe_first):
 
     # Special settings see Arch wiki for details: https://wiki.archlinux.org/index.php/ZFS
     sh.zfs.create(
-        '-o', 'recordsize=8K',
-        '-o', 'primarycache=metadata',
-        '-o', 'mountpoint=/var/lib/postgresql',
-        '-o', 'logbias=throughput',
-        f'{config.pool_name}/postgresql'
+        '-o',
+        'recordsize=8K',
+        '-o',
+        'primarycache=metadata',
+        '-o',
+        'mountpoint=/var/lib/postgresql',
+        '-o',
+        'logbias=throughput',
+        f'{config.pool_name}/postgresql',
     )
 
 
@@ -309,6 +336,7 @@ def kernels_in_boot():
     kernel_versions = [fpath.name[8:] for fpath in kernel_fpaths]
     return kernel_versions
 
+
 # ------------------
 # CLI Commands Below
 # ------------------
@@ -316,7 +344,7 @@ def kernels_in_boot():
 
 @click.group()
 @click.pass_context
-def zor(ctx):
+def main(ctx):
     global config
     config = config_prep(ctx)
 
@@ -324,27 +352,27 @@ def zor(ctx):
         ctx.fail('You must be root')
 
 
-@zor.command('config')
+@main.command('config')
 def _config():
     print(config)
 
 
-@zor.command()
+@main.command()
 def kernel_versions():
     print(kernels_in_boot())
 
 
-@zor.command()
+@main.command()
 def status():
-    print(f'$ config values --------------------\n')
+    print('$ config values --------------------\n')
     for k, v in config.__dict__.items():
         print(k, v)
 
     print(f'\n$ sgdisk --print {config.disk_dev} --------------------\n')
-    sh.sgdisk('--print', config.disk_dev, _out=sys.stdout, _ok_code=[0,2])
+    sh.sgdisk('--print', config.disk_dev, _out=sys.stdout, _ok_code=[0, 2])
 
-    print(f'\n$ blkid --------------------------\n')
-    sh.blkid(_out=sys.stdout,)
+    print('\n$ blkid --------------------------\n')
+    sh.blkid(_out=sys.stdout)
 
     print('\n$ zpool list ---------------------------\n')
     sh.zpool('list', _out=sys.stdout)
@@ -356,10 +384,10 @@ def status():
     sh.zfs('mount', _out=sys.stdout)
 
 
-@zor.command()
+@main.command()
 @click.option('--chroot', is_flag=True, default=False)
 def recover(chroot):
-    """ Import pool and mount filesystem in prep for recovery efforts """
+    """Import pool and mount filesystem in prep for recovery efforts"""
     sh.zpool.export('-a', _fg=True)
     sh.zpool('import', '-Nf', '-R', paths.zroot, config.pool_name, _fg=True)
     sh.zfs('load-key', '-a', _fg=True)
@@ -372,25 +400,25 @@ def recover(chroot):
         sh.chroot(paths.zroot, '/bin/bash', '--login', _fg=True)
 
 
-@zor.command()
+@main.command()
 def chroot():
-    """ Import pool and mount filesystem in prep for recovery efforts """
+    """Import pool and mount filesystem in prep for recovery efforts"""
     sh.chroot(paths.zroot, '/bin/bash', '--login', _fg=True)
 
 
-@zor.command()
+@main.command()
 def unmount():
-    """ Cleanup all the mounts we created"""
+    """Cleanup all the mounts we created"""
     unmount_everything()
 
     sh.zpool.export('-a', _fg=True)
 
 
-@zor.command('disk-partition')
+@main.command('disk-partition')
 def disk_partition():
-    """ Partition a presumably blank disk """
+    """Partition a presumably blank disk"""
     # format disk as GPT
-    sh.sgdisk('-Z', config.disk_dev, _ok_code=[0,2])
+    sh.sgdisk('-Z', config.disk_dev, _ok_code=[0, 2])
 
     # UEFI partition
     sh.sgdisk('-n', '1:1M:+512M', '-c', f'1:{config.efi_partname}', '-t', '1:EF00', config.disk_dev)
@@ -405,31 +433,38 @@ def disk_partition():
     sh.sgdisk('-n', '0:0:0', '-c', f'0:{config.zfs_partname}', '-t', '0:BF01', config.disk_dev)
 
 
-@zor.command('disk-format')
+@main.command('disk-format')
 def disk_format():
     # format EFI
     sh.mkdosfs('-F', '32', '-s', '1', '-n', config.efi_partname, config.efi_dev)
 
     # format boot
-    mkfsext4 = sh.Command("mkfs.ext4")
+    mkfsext4 = sh.Command('mkfs.ext4')
     mkfsext4('-qF', '-L', config.boot_partname, config.boot_dev)
 
 
-@zor.command('disk-wipe')
+@main.command('disk-wipe')
 def disk_wipe():
-    """ Wipe all filesystem and parition data from the disk.  """
+    """Wipe all filesystem and parition data from the disk."""
     print('Destroying filesystem and partition data')
     sh.wipefs('-a', config.disk_dev)
     sh.sgdisk('--zap-all', config.disk_dev)
     sh.sgdisk('-og', config.disk_dev)
-    print('Writing 10GB of zeros to the drive, this may take seconds or minutes depending on disk speed')
-    sh.dd('bs=10M', 'count=1024', 'if=/dev/zero', f'of={config.disk_dev}', 'conv=fdatasync', _out=sys.stdout)
+    print('Writing 10GB of zeros, this may take seconds or minutes depending on drive speed')
+    sh.dd(
+        'bs=10M',
+        'count=1024',
+        'if=/dev/zero',
+        f'of={config.disk_dev}',
+        'conv=fdatasync',
+        _out=sys.stdout,
+    )
 
 
-@zor.command()
+@main.command()
 @click.option('--mount-only', is_flag=True, default=False)
 def efi(mount_only):
-    """ Write programs to EFI partition """
+    """Write programs to EFI partition"""
     partitions = Partitions()
 
     paths.efi_mnt.mkdir(exist_ok=True)
@@ -455,35 +490,47 @@ def efi(mount_only):
         img_fpath, efi_start_bytes = memtest_extract()
         sh.mount('-o', f'loop,ro,offset={efi_start_bytes}', img_fpath, paths.memtest_mnt)
 
-
     # clean slate and copy files to our EFI partition
     sh.rm('-rf', paths.efi_memtest)
     sh.cp('-r', paths.memtest_boot, paths.efi_memtest)
     sh.mv(paths.efi_memtest / 'BOOTX64.efi', paths.efi_memtest / 'memtest86_x64.efi')
 
 
-@zor.command()
+@main.command()
 @click.option('--wipe-first', is_flag=True, default=False)
 def zpool(wipe_first):
-    """ Create ZFS pool and datasets """
+    """Create ZFS pool and datasets"""
     if wipe_first:
         sh.zfs.umount('-a')
-        sh.zpool.destroy(config.pool_name, _ok_code=(0,1))
+        sh.zpool.destroy(config.pool_name, _ok_code=(0, 1))
 
     sh.zpool.create(
-        '-o', 'ashift=12',
-        '-O', 'acltype=posixacl',
-        '-O', 'canmount=off',
-        '-O', 'compression=lz4',
-        '-O', 'dnodesize=auto',
-        '-O', 'normalization=formD',
-        '-O', 'relatime=on',
-        '-O', 'xattr=sa',
-        '-O', 'encryption=aes-256-gcm',
-        '-O', 'keylocation=prompt',
-        '-O', 'keyformat=passphrase',
-        '-O', 'mountpoint=none',
-        '-R', paths.zroot,
+        '-o',
+        'ashift=12',
+        '-O',
+        'acltype=posixacl',
+        '-O',
+        'canmount=off',
+        '-O',
+        'compression=lz4',
+        '-O',
+        'dnodesize=auto',
+        '-O',
+        'normalization=formD',
+        '-O',
+        'relatime=on',
+        '-O',
+        'xattr=sa',
+        '-O',
+        'encryption=aes-256-gcm',
+        '-O',
+        'keylocation=prompt',
+        '-O',
+        'keyformat=passphrase',
+        '-O',
+        'mountpoint=none',
+        '-R',
+        paths.zroot,
         '-f',
         config.pool_name,
         config.zfs_dev,
@@ -491,17 +538,17 @@ def zpool(wipe_first):
     )
 
 
-@zor.command()
+@main.command()
 @click.option('--wipe-first', is_flag=True, default=False)
 def zfs(wipe_first):
-    """ Create ZFS pool and dataset """
+    """Create ZFS pool and dataset"""
     zfs_create(wipe_first)
 
 
-@zor.command('install-os')
+@main.command('install-os')
 @click.option('--wipe-first', is_flag=True, default=False)
 def install_os(wipe_first):
-    """ Install the OS into the presumably mounted datasets """
+    """Install the OS into the presumably mounted datasets"""
     if wipe_first:
         zfs_create(wipe_first)
         print('Sleeping 5 seconds to give zfs datasets time to mount...')
@@ -514,11 +561,23 @@ def install_os(wipe_first):
     db_staging_fpath = config.cache_dpath / 'debootstrap-staging'
 
     if not db_tarball_fpath.exists():
-        sh.debootstrap('--make-tarball', db_tarball_fpath, config.release_codename, db_staging_fpath, _fg=True)
+        sh.debootstrap(
+            '--make-tarball',
+            db_tarball_fpath,
+            config.release_codename,
+            db_staging_fpath,
+            _fg=True,
+        )
 
     if not paths.zroot.joinpath('bin').exists():
         sh.zfs('set', 'devices=on', config.os_root_ds)
-        sh.debootstrap('--unpack-tarball', db_tarball_fpath, config.release_codename, paths.zroot, _fg=True)
+        sh.debootstrap(
+            '--unpack-tarball',
+            db_tarball_fpath,
+            config.release_codename,
+            paths.zroot,
+            _fg=True,
+        )
         sh.zfs('set', 'devices=off', config.os_root_ds)
 
     other_mounts()
@@ -547,7 +606,7 @@ def install_os(wipe_first):
     chroot('apt', 'update')
 
     chroot('locale-gen', '--purge', 'en_US.UTF-8', _fg=True)
-    chroot('update-locale', LANG="en_US.UTF-8", LANGUAGE="en_US:en", _fg=True)
+    chroot('update-locale', LANG='en_US.UTF-8', LANGUAGE='en_US:en', _fg=True)
 
     chroot('ln', '-fs', '/usr/share/zoneinfo/US/Eastern', '/etc/localtime', _fg=True)
     chroot('dpkg-reconfigure', '-f', 'noninteractive', 'tzdata', _fg=True)
@@ -563,7 +622,7 @@ def install_os(wipe_first):
         chroot('update-initramfs', '-uk', kernel_version, _fg=True)
 
 
-@zor.command('install-user')
+@main.command('install-user')
 @click.option('--wipe-first', is_flag=True, default=False)
 def install_user(wipe_first):
     chroot = sh.chroot.bake(paths.zroot)
@@ -576,12 +635,12 @@ def install_user(wipe_first):
     # user_dataset = f'{config.pool_name}/home/{username}'
 
     if wipe_first:
-        #chroot.zfs.umount(user_dataset, _ok_code=[0,1])
-        chroot.userdel(username, '--remove', _ok_code=[0,6])
+        # chroot.zfs.umount(user_dataset, _ok_code=[0,1])
+        chroot.userdel(username, '--remove', _ok_code=[0, 6])
         # chroot.zfs.destroy('-R', user_dataset, _ok_code=[0,1])
 
     # Create user dataset
-    #sh.zfs.create(user_dataset)
+    # sh.zfs.create(user_dataset)
 
     chroot.useradd('--create-home', '-p', passhash, username)
 
@@ -589,10 +648,15 @@ def install_user(wipe_first):
     chroot.addgroup('--system', 'lpadmin')
     chroot.addgroup('--system', 'netdev')
     chroot.addgroup('--system', 'sambashare')
-    chroot.usermod('-a', '-G', 'adm,cdrom,dip,docker,lpadmin,netdev,plugdev,sambashare,sudo', username)
+    chroot.usermod(
+        '-a',
+        '-G',
+        'adm,cdrom,dip,docker,lpadmin,netdev,plugdev,sambashare,sudo',
+        username,
+    )
 
 
-@zor.command('install-desktop')
+@main.command('install-desktop')
 @click.argument('desktop', type=click.Choice(['cinnamon', 'xubuntu']))
 def install_desktop(desktop):
     chroot = sh.chroot.bake(paths.zroot)
@@ -603,7 +667,3 @@ def install_desktop(desktop):
 
     # Ideally 'cinnamon-core' would work, but alas, didn't.
     chroot.apt('install', '--yes', desk_env, _fg=True)
-
-
-if __name__ == '__main__':
-    zor()

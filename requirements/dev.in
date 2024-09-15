@@ -1,0 +1,8 @@
+-r base.txt
+
+# From copier-py-package (keep comment for easier copier upgrades)
+pre-commit
+ruff
+
+
+# App specific (ditto)

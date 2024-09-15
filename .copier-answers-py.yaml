@@ -1,0 +1,11 @@
+# Changes here will be overwritten by Copier; NEVER EDIT MANUALLY
+_commit: v0.20240720.2
+_src_path: gh:level12/copier-py-package
+author_email: randy@syrings.us
+author_name: Randy Syring
+project_name: zfs-on-root
+py_module: zor
+python_version: '3.12'
+script_name: zor
+use_pipx: false
+virtualenv_name: zfs-on-root

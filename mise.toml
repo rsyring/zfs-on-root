@@ -1,0 +1,7 @@
+[env]
+_.python.venv.path = "{{ get_env(name='WORKON_HOME', default='/tmp') }}/zfs-on-root"
+_.python.venv.create = true
+RUFF_OUTPUT_FORMAT= 'concise'
+
+[tools]
+python = "3.12"

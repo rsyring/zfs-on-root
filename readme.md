@@ -28,20 +28,19 @@ Troubleshooting
 * sudo python3 zor.py unmount
 
 
-ToDo
-----
+Copier Template
+------------------
 
-* Configure swap
-  - should be encrypted
-  - /etc/sysctl.conf:
-    vm.swappiness=1
-    vm.vfs_cache_pressure=50
-* Disable log compression
-* Set ZFS trim
+Project structure and tooling mostly derives from the [copier-py-package](https://github.com/level12/copier-py-package),
+see its documentation for context and additional instructions.
 
-Commands
---------
+This project can be updated from the upstream repo, see [updates](https://github.com/level12/copier-py-package?tab=readme-ov-file#updates)
 
-Find processes that prevent unmount:
 
-`$ sudo fuser -vm /mnt/sampro`
+## Versions
+
+Versions are date based.  Tools:
+
+- Current version: `hatch version`
+- Bump version based on date, tag, push: `mise run bump`
+   - Options: `mise run bump -- --help`
