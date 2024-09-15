@@ -4,6 +4,14 @@ Ubuntu Root on ZFS
 Usage Steps
 -----------
 
+If you are REALLY sure your `zor-config.ini` is accurate:
+
+* sudo python3 zor.py status
+* sudo python3 zor.py install
+
+The more sensible path is probably to run all these commands one-by-one, whic is what `install`
+does:
+
 * sudo python3 zor.py status
 * sudo python3 zor.py disk-wipe
 * sudo python3 zor.py disk-partition
@@ -17,7 +25,8 @@ Usage Steps
 * sudo python3 zor.py status
 * sudo python3 zor.py unmount
   - Make sure you unmount which exports the zpool.
-  - This errors out the first time you run due to proc, just run it again.
+  - If this errors out the first time you run due to proc, just run it again.
+
 
 Troubleshooting
 ----------------
