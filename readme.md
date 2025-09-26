@@ -27,6 +27,19 @@ does:
   - Make sure you unmount which exports the zpool.
   - If this errors out the first time you run due to proc, just run it again.
 
+### Rescue Image
+
+If you have a separate hard drive, zor can WIPE IT and make it bootable with the current
+live image.  Example:
+
+ ❯ sudo zor create-rescue xubu2404 /dev/disk/by-id/nvme-TOSHIBA-RC100_487PA0XRPW7S --part-prefix toshd
+
+ This will:
+
+ * WIPE the given drive
+ * Create an EFI partition and install refind as the default boot image
+ * Create a second partition and clone the partition given.  Most commonly, the one that represents
+   the current live environment running.
 
 Troubleshooting
 ----------------
