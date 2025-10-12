@@ -1,5 +1,6 @@
 line-length = 100
 target-version = 'py312'
+output-format = 'concise'
 
 [format]
 line-ending = 'lf'
@@ -55,7 +56,7 @@ ignore = [
     # Rules that conflict with the formatter.  See:
     #
     #  * https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
-    #  * https://github.com/level12/copier-py-package/issues/13
+    #  * https://github.com/level12/coppy/issues/13
     #
     # These are all redundant when the formatter is being used
     'W191',    # tab-indentation
@@ -70,12 +71,13 @@ ignore = [
     'Q003',    # avoidable-escaped-quote
 ]
 
-# [per-file-ignores]
-# 'mu/cli/__init__.py' = ['F401', 'I001']
+
+[lint.per-file-ignores]
+'tasks/*.py' = ['EXE003']
 
 
 [lint.flake8-builtins]
-builtins-ignorelist = ['id', 'help', 'compile']
+ignorelist = ['id', 'help', 'compile']
 
 
 [lint.flake8-quotes]
@@ -87,4 +89,4 @@ inline-quotes = 'single'
 [lint.isort]
 lines-after-imports = 2
 force-sort-within-sections = true
-known-first-party = ['tasks_lib']
+known-local-folder = ['src', 'tests']

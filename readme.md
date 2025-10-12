@@ -1,33 +1,43 @@
 Ubuntu Root on ZFS
 ==================
 
+Install
+-------
+
+Install with `uv`.
+
+Example: `uv tool install -e ./zfs-on-root`
+
+
 Usage Steps
 -----------
 
 If you are REALLY sure your `zor-config.ini` is accurate:
 
-* sudo python3 zor.py status
-* sudo python3 zor.py install
+* zor status
+* zor install
 
-The more sensible path is probably to run all these commands one-by-one, whic is what `install`
+The more sensible path is probably to run all these commands one-by-one, which is what `install`
 does:
 
-* sudo python3 zor.py status
-* sudo python3 zor.py disk-wipe
-* sudo python3 zor.py disk-partition
-* sudo python3 zor.py disk-format
-* sudo python3 zor.py efi
-* sudo python3 zor.py zpool
-* sudo python3 zor.py zfs
-* sudo python3 zor.py install-os
-* sudo python3 zor.py install-user
-* sudo python3 zor.py install-desktop
-* sudo python3 zor.py status
-* sudo python3 zor.py unmount
+* zor status
+* zor disk-wipe
+* zor disk-partition
+* zor disk-format
+* zor efi
+* zor zpool
+* zor zfs
+* zor install-os
+* zor install-user
+* zor install-desktop
+* zor status
+* zor unmount
   - Make sure you unmount which exports the zpool.
   - If this errors out the first time you run due to proc, just run it again.
 
-### Rescue Image
+
+Rescue Image
+------------
 
 If you have a separate hard drive, zor can WIPE IT and make it bootable with the current
 live image.  Example:
@@ -50,19 +60,50 @@ Troubleshooting
 * sudo python3 zor.py unmount
 
 
-Copier Template
-------------------
+## Dev
 
-Project structure and tooling mostly derives from the [copier-py-package](https://github.com/level12/copier-py-package),
+### Copier Template
+
+Project structure and tooling mostly derives from the [Coppy](https://github.com/level12/coppy),
 see its documentation for context and additional instructions.
 
-This project can be updated from the upstream repo, see [updates](https://github.com/level12/copier-py-package?tab=readme-ov-file#updates)
+This project can be updated from the upstream repo, see
+[Updating a Project](https://github.com/level12/coppy?tab=readme-ov-file#updating-a-project).
 
+### Project Setup
 
-## Versions
+From zero to hero (passing tests that is):
 
-Versions are date based.  Tools:
+1. Ensure [host dependencies](https://github.com/level12/coppy/wiki/Mise) are installed
 
-- Current version: `hatch version`
-- Bump version based on date, tag, push: `mise run bump`
-   - Options: `mise run bump -- --help`
+2. Start docker service dependencies (if applicable):
+
+   `docker compose up -d`
+
+3. Sync [project](https://docs.astral.sh/uv/concepts/projects/) virtualenv w/ lock file:
+
+   `uv sync`
+
+4. Configure pre-commit:
+
+   `pre-commit install`
+
+5. Run tests:
+
+   `nox`
+
+### Versions
+
+Versions are date based.  A `bump` action exists to help manage versions:
+
+```shell
+
+  # Show current version
+  mise bump --show
+
+  # Bump version based on date, tag, and push:
+  mise bump
+
+  # See other options
+  mise bump -- --help
+```

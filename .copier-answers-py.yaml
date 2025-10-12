@@ -1,11 +1,19 @@
-# Changes here will be overwritten by Copier; NEVER EDIT MANUALLY
-_commit: v0.20240720.2
+# Changes here will be overwritten by Copier
+#
+# Updating `_src` could be helpful, see notes at:
+# https://github.com/level12/coppy/wiki#creating-a-project
+#
+# Otherwise, NEVER EDIT MANUALLY
+_commit: v1.20250622.1-51-gae1e8ff
 _src_path: gh:level12/copier-py-package
 author_email: randy@syrings.us
 author_name: Randy Syring
+gh_org: rsyring
+gh_repo: zfs-on-root
+hatch_version_tag_sign: true
 project_name: zfs-on-root
 py_module: zor
 python_version: '3.12'
 script_name: zor
-use_pipx: false
-virtualenv_name: zfs-on-root
+use_circleci: false
+use_gh_nox: false

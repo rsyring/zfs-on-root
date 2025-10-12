@@ -27,11 +27,3 @@ def sub_run(
         if capture:
             print(e.stderr)
         raise
-
-
-def rm_dir(dpath):
-    sub_run('rm', '-r', dpath)
-
-
-def chroot(root_path: str, *args, **kwargs):
-    return sub_run('chroot', root_path, *args, **kwargs)

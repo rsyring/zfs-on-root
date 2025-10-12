@@ -1,6 +1,5 @@
 import configparser
 from dataclasses import dataclass
-import os
 from pathlib import Path
 import time
 
@@ -149,9 +148,6 @@ paths = Paths()
 def main(ctx):
     global config
     config = config_prep(ctx)
-
-    if os.getuid() != 0:
-        ctx.fail('You must be root')
 
 
 @main.command('config')

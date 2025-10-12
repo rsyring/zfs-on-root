@@ -1,7 +1,30 @@
 [env]
-_.python.venv.path = "{{ get_env(name='WORKON_HOME', default='/tmp') }}/zfs-on-root"
-_.python.venv.create = true
+# Will use a centralized venv if `~/.cache/uv-venvs` exists.  `.venv` otherwise.
+UV_PROJECT_ENVIRONMENT = "{{ exec(command='tasks/mise-uv-init.py proj-env', cache_key='proj-env', cache_duration='1h') | trim }}"
+_.python.venv.path = '{{ env.UV_PROJECT_ENVIRONMENT }}'
+
 RUFF_OUTPUT_FORMAT= 'concise'
 
 [tools]
-python = "3.12"
+python = "{{ exec(command='tasks/mise-uv-init.py py-ver', cache_key='py-ver', cache_duration='1h') | trim }}"
+
+
+[task_config]
+includes = [
+    'tasks',
+]
+
+
+################ TASKS #################
+[tasks.pytest-cov]
+description = 'Full pytest run with html coverage report'
+# .coveragerc sets directory to ./tmp/coverage-html
+run = 'pytest --cov --cov-report=html --no-cov-on-fail'
+
+
+[tasks.upgrade-deps]
+description = 'Upgrade uv and pre-commit dependencies'
+run = [
+    'uv sync --upgrade',
+    'pre-commit autoupdate',
+]

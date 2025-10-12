@@ -6,7 +6,7 @@ import subprocess
 
 import psutil
 
-from . import utils, zfs
+from . import utils
 
 
 class PartType(enum.Enum):

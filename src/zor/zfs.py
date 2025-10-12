@@ -1,6 +1,6 @@
 import subprocess
 
-from . import cli, disks, utils
+from . import cli, utils
 
 
 def zfs(*args, **kwargs) -> subprocess.CompletedProcess:

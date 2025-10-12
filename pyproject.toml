@@ -1,7 +1,6 @@
 [build-system]
 requires = [
     'hatchling',
-    'hatch-requirements-txt',
     'hatch-regex-commit',
 ]
 build-backend = 'hatchling.build'
@@ -12,8 +11,44 @@ name = 'zfs-on-root'
 authors = [
     {name = 'Randy Syring', email = 'randy@syrings.us'},
 ]
-dynamic = ['dependencies', 'optional-dependencies', 'version']
+requires-python = '~=3.12.0'
+dynamic = ['version']
 readme = 'readme.md'
+dependencies = [
+    "click>=8.1.7",
+    "psutil>=7.1.0",
+    "sh>=2.2.2",
+]
+
 
 [project.scripts]
 'zor' = 'zor.cli:main'
+
+
+[dependency-groups]
+dev = [
+    {include-group = "pytest"},
+    {include-group = "pre-commit"},
+    {include-group = "audit"},
+    {include-group = "nox"},
+    'hatch',
+    'ruff',
+]
+# Used by nox
+pytest = [
+    'pytest',
+    'pytest-cov',
+]
+# Used by nox
+pre-commit = [
+    'pre-commit',
+    'pre-commit-uv',
+]
+# Used by nox
+audit = [
+    'pip-audit',
+]
+# Used by CI
+nox = [
+    'nox',
+]
