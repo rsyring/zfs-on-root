@@ -161,7 +161,7 @@ def create_pool(mount_at, pool_name, device, **kwargs) -> subprocess.CompletedPr
         '-O',
         'canmount=off',
         '-O',
-        'compression=zstd',
+        'compression=lz4',
         '-O',
         'dnodesize=auto',
         '-O',
