@@ -1,5 +1,6 @@
 import configparser
 from dataclasses import dataclass
+import os
 from pathlib import Path
 import time
 
@@ -147,6 +148,10 @@ paths = Paths()
 @click.pass_context
 def main(ctx):
     global config
+
+    if os.getuid() != 0:
+        ctx.fail('You must be root')
+
     config = config_prep(ctx)
 
 
@@ -226,12 +231,11 @@ def disk_partition():
 
 @main.command('disk-format')
 def disk_format():
-    # format EFI
+    # Format EFI
     disks.efi_format(config.efi_partname)
 
-    # format boot
-    mkfsext4 = sh.Command('mkfs.ext4')
-    mkfsext4('-qF', '-L', config.boot_partname, config.boot_dev)
+    # Format /boot
+    disks.mkfs_ext4('-qF', '-L', config.boot_partname, config.boot_dev)
 
 
 @main.command('disk-wipe')
@@ -254,7 +258,8 @@ def efi(mount_only: bool):
 
 @main.command()
 @click.option('--wipe-first', is_flag=True, default=False)
-def zpool(wipe_first):
+@click.option('--crypt/--no-crypt', default=True)
+def zpool(wipe_first: bool, crypt: bool):
     """Create ZFS pool and datasets"""
     if wipe_first:
         zfs.umount(paths.zroot)
@@ -267,7 +272,7 @@ def zpool(wipe_first):
     # TODO: could make it time based...if the create command fails in < 1s, then it's not a user
     # entered issue.
     for _ in range(10):
-        result = zfs.create_pool(paths.zroot, config.pool_name, config.zfs_dev, check=False)
+        result = zfs.create_pool(paths.zroot, config.pool_name, config.zfs_dev, crypt, check=False)
         if result.returncode == 0:
             print('ZFS pool created:', config.pool_name)
             return
@@ -403,20 +408,25 @@ def install_user(wipe_first):
     )
 
 
+DESKTOP_CHOICES = {
+    'cinnamon': 'cinnamon-desktop-environment',
+    'kubuntu': 'kubuntu-desktop',
+    'xubuntu': 'xubuntu-desktop',
+}
+
+
 @main.command('install-desktop')
-@click.argument('desktop', type=click.Choice(['cinnamon', 'xubuntu']))
+@click.argument('desktop', type=click.Choice(DESKTOP_CHOICES.keys()))
 def install_desktop(desktop):
-    desk_env = 'cinnamon-desktop-environment' if desktop == 'cinnamon' else 'xubuntu-desktop'
+    desk_env = DESKTOP_CHOICES[desktop]
 
     # Full OS & desktop install
     utils.chroot(paths.zroot, 'apt', 'dist-upgrade', '--yes')
-
-    # Ideally 'cinnamon-core' would work, but alas, didn't.
     utils.chroot(paths.zroot, 'apt', 'install', '--yes', desk_env)
 
 
 @main.command()
-@click.argument('desktop', type=click.Choice(['cinnamon', 'xubuntu']))
+@click.argument('desktop', type=click.Choice(DESKTOP_CHOICES.keys()))
 @click.option('--inspect', is_flag=True)
 @click.pass_context
 def install(ctx: click.Context, desktop: str, inspect: bool):

@@ -23,8 +23,8 @@ def disk_wipe(disk_dev: str | Path, write_zeros: bool = True):
 
     print('Destroying filesystem and partition data on:', disk_dev)
     utils.sub_run('wipefs', '-a', disk_dev)
-    utils.sub_run('sgdisk', '--zap-all', disk_dev)
-    utils.sub_run('sgdisk', '-og', disk_dev)
+    sgdisk('--zap-all', disk_dev)
+    sgdisk('-og', disk_dev)
 
     if not write_zeros:
         return True
@@ -54,17 +54,17 @@ def disk_partition(
 ):
     """Partition a presumably blank disk"""
     # format disk as GPT
-    utils.sub_run('sgdisk', '-Z', disk_dev, returns=(0, 2))
+    sgdisk('-Z', disk_dev, returns=(0, 2))
 
     # UEFI partition
-    utils.sub_run('sgdisk', '-n', '1:1M:+512M', '-c', f'1:{efi_label}', '-t', '1:EF00', disk_dev)
+    sgdisk('-n', '1:1M:+512M', '-c', f'1:{efi_label}', '-t', '1:EF00', disk_dev)
 
     if boot_label:
-        utils.sub_run('sgdisk', '-n', '0:0:+2G', '-c', f'0:{boot_label}', '-t', '2:8300', disk_dev)
+        sgdisk('-n', '0:0:+2G', '-c', f'0:{boot_label}', '-t', '2:8300', disk_dev)
 
     # zfs root pool partition with 20G left at the end for swap, live boot images, etc.
     if zfs_label:
-        utils.sub_run('sgdisk', '-n', '0:0:-20G', '-c', f'0:{zfs_label}', '-t', '0:BF01', disk_dev)
+        sgdisk('-n', '0:0:-20G', '-c', f'0:{zfs_label}', '-t', '0:BF01', disk_dev)
 
 
 def efi_format(part_label: str):
@@ -161,7 +161,7 @@ def memtest_extract(cache_dpath: Path):
         print('Extracting zip to', unzip_fpath)
         utils.sub_run('unzip', '-d', unzip_fpath, zip_fpath)
 
-    output = utils.sub_run('sgdisk', '-p', img_fpath)
+    output = sgdisk('-p', img_fpath)
     lines = output.strip().splitlines()
     # Second line should look like:
     #   Sector size (logical): 512 bytes
@@ -235,6 +235,10 @@ def destroy_confirm(disk_dev: Path):
                 return True
             case 'no':
                 return False
+
+
+def mkfs_ext4(*args, **kwargs):
+    return utils.sub_run('mkfs.ext4', *args, **kwargs)
 
 
 @dataclass

@@ -149,7 +149,19 @@ def umount(zroot):
     print('ZFS datasets unmounted')
 
 
-def create_pool(mount_at, pool_name, device, **kwargs) -> subprocess.CompletedProcess:
+def create_pool(
+    mount_at,
+    pool_name,
+    device,
+    encrypt: bool,
+    **kwargs,
+) -> subprocess.CompletedProcess:
+    encrypt_args = (
+        ('-O', 'encryption=aes-256-gcm', '-O', 'keylocation=prompt', '-O', 'keyformat=passphrase')
+        if encrypt
+        else ()
+    )
+
     return zpool(
         'create',
         '-o',
@@ -170,12 +182,7 @@ def create_pool(mount_at, pool_name, device, **kwargs) -> subprocess.CompletedPr
         'relatime=on',
         '-O',
         'xattr=sa',
-        '-O',
-        'encryption=aes-256-gcm',
-        '-O',
-        'keylocation=prompt',
-        '-O',
-        'keyformat=passphrase',
+        *encrypt_args,
         '-O',
         'mountpoint=none',
         '-R',

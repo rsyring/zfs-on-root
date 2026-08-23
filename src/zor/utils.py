@@ -3,6 +3,17 @@ from os import environ
 import subprocess
 
 
+class CalledProcessError(subprocess.CalledProcessError):
+    def __init__(self, exc: subprocess.CalledProcessError):
+        self.returncode = exc.returncode
+        self.cmd = exc.cmd
+        self.output = exc.output
+        self.stderr = exc.stderr
+
+    def __str__(self):
+        return super().__str__() + f'\nSTDOUT: {self.stdout}' + f'\nSTDERR: {self.stderr}'
+
+
 def sub_run(
     *args,
     capture=False,
@@ -25,7 +36,7 @@ def sub_run(
         return result
     except subprocess.CalledProcessError as e:
         if capture:
-            print(e.stderr)
+            raise CalledProcessError(e) from e
         raise
 
 
