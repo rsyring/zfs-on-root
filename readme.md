@@ -60,15 +60,19 @@ Troubleshooting
 * sudo python3 zor.py unmount
 
 
+
 ## Dev
+
 
 ### Copier Template
 
-Project structure and tooling mostly derives from the [Coppy](https://github.com/level12/coppy),
-see its documentation for context and additional instructions.
+Project structure and tooling mostly derives from
+[Coppy](https://github.com/level12/coppy). See its documentation for context and
+additional instructions.
 
 This project can be updated from the upstream repo, see
-[Updating a Project](https://github.com/level12/coppy?tab=readme-ov-file#updating-a-project).
+[Updating a Project](https://github.com/level12/coppy?tab=readme-ov-file#template-updates).
+
 
 ### Project Setup
 
@@ -84,26 +88,27 @@ From zero to hero (passing tests that is):
 
    `uv sync`
 
-4. Configure pre-commit:
+4. Configure prek:
 
-   `pre-commit install`
+   `prek install`
 
 5. Run tests:
 
    `nox`
 
+
 ### Versions
 
-Versions are date based.  A `bump` action exists to help manage versions:
+Versions are date based. A `version` task shows and bumps versions:
 
 ```shell
 
   # Show current version
-  mise bump --show
+  mise version show
 
   # Bump version based on date, tag, and push:
-  mise bump
+  mise version bump
 
   # See other options
-  mise bump -- --help
+  mise version -- --help
 ```

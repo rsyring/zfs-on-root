@@ -4,16 +4,18 @@
 # https://github.com/level12/coppy/wiki#creating-a-project
 #
 # Otherwise, NEVER EDIT MANUALLY
-_commit: v1.20250622.1-51-gae1e8ff
+_commit: v1.20260813.1
 _src_path: gh:level12/copier-py-package
 author_email: randy@syrings.us
 author_name: Randy Syring
 gh_org: rsyring
 gh_repo: zfs-on-root
-hatch_version_tag_sign: true
 project_name: zfs-on-root
 py_module: zor
 python_version: '3.12'
+python_version_min: '3.12'
 script_name: zor
 use_circleci: false
 use_gh_nox: false
+use_js_cooldown: false
+use_rumdl: false

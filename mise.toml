@@ -1,12 +1,17 @@
-[env]
-# Will use a centralized venv if `~/.cache/uv-venvs` exists.  `.venv` otherwise.
-UV_PROJECT_ENVIRONMENT = "{{ exec(command='tasks/mise-uv-init.py proj-env', cache_key='proj-env', cache_duration='1h') | trim }}"
-_.python.venv.path = '{{ env.UV_PROJECT_ENVIRONMENT }}'
-
-RUFF_OUTPUT_FORMAT= 'concise'
+[hooks]
+enter = "uv sync"
 
 [tools]
-python = "{{ exec(command='tasks/mise-uv-init.py py-ver', cache_key='py-ver', cache_duration='1h') | trim }}"
+
+
+[settings]
+# Have mise get it's Python version from .python-version.  We get two other benefits:
+# 1) uv, apart from mise, will pick the correct python version, and `uv run` and similar can be used
+#   apart from mise.
+# 2) GitHub's setup-python action can be directed to the .python-version file
+idiomatic_version_file_enable_tools = ["python"]
+
+python.uv_venv_auto = "create|source"
 
 
 [task_config]
@@ -18,13 +23,17 @@ includes = [
 ################ TASKS #################
 [tasks.pytest-cov]
 description = 'Full pytest run with html coverage report'
-# .coveragerc sets directory to ./tmp/coverage-html
+# .coveragerc sets html output directory to: tmp/coverage-html
+# But coverage only looks for the rc file in the CWD, so start in proj root.
+dir = "{{ config_root }}"
 run = 'pytest --cov --cov-report=html --no-cov-on-fail'
 
 
 [tasks.upgrade-deps]
-description = 'Upgrade uv and pre-commit dependencies'
+description = 'Upgrade mise, uv, and prek dependencies'
+dir = "{{ config_root }}"
 run = [
+    'mise lock --bump',
     'uv sync --upgrade',
-    'pre-commit autoupdate',
+    'prek auto-update',
 ]
